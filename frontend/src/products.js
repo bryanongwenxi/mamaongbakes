@@ -36,7 +36,7 @@ const products = [
       price: 18.00,
       countInStock: 5,
       rating: 4,
-      numReviews: 12,
+      numReviews: 15,
     },
     {
       _id: '4',
@@ -49,7 +49,7 @@ const products = [
       price: 8.00,
       countInStock: 11,
       rating: 5,
-      numReviews: 12,
+      numReviews: 10,
     },
     {
       _id: '5',
@@ -62,7 +62,7 @@ const products = [
       price: 12.00,
       countInStock: 7,
       rating: 4.5,
-      numReviews: 10,
+      numReviews: 14,
     },
     {
       _id: '6',
@@ -75,7 +75,7 @@ const products = [
       price: 6.00,
       countInStock: 4,
       rating: 4,
-      numReviews: 12,
+      numReviews: 8,
     },
     {
         _id: '7',
@@ -88,7 +88,7 @@ const products = [
         price: 7.00,
         countInStock: 4,
         rating: 4,
-        numReviews: 12,
+        numReviews: 6,
       },
       {
         _id: '8',
@@ -100,7 +100,7 @@ const products = [
         category: 'Sourdough',
         price: 12.00,
         countInStock: 4,
-        rating: 4,
+        rating: 4.5,
         numReviews: 12,
       },
       {
@@ -114,7 +114,7 @@ const products = [
         price: 5.00,
         countInStock: 4,
         rating: 4,
-        numReviews: 12,
+        numReviews: 10,
       },
       {
         _id: '10',
@@ -139,7 +139,7 @@ const products = [
         category: 'Sourdough',
         price: 9.00,
         countInStock: 4,
-        rating: 4,
+        rating: 4.5,
         numReviews: 12,
       },
       {
@@ -152,8 +152,8 @@ const products = [
         category: 'Sourdough',
         price: 12.00,
         countInStock: 4,
-        rating: 4,
-        numReviews: 12,
+        rating: 4.0,
+        numReviews: 7,
       },
   ]
   
