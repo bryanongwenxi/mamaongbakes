@@ -121,7 +121,7 @@ const products = [
         name: 'Cinnamon Sugar Donut',
         image: '/images/cinnamon.jpg',
         description:
-          '2 pieces of cinnamon and sugar coated sourdough donut.',
+          '2 pieces of cinnamon and sugar coated sourdough donuts.',
         brand: 'mob',
         category: 'Sourdough',
         price: 7.00,
@@ -134,7 +134,7 @@ const products = [
         name: 'Custard Filled Donut',
         image: '/images/custard.jpg',
         description:
-          '2 pieces of custard filled sourdough donut.',
+          '2 pieces of custard filled sourdough donuts.',
         brand: 'mob',
         category: 'Sourdough',
         price: 9.00,
@@ -147,7 +147,7 @@ const products = [
         name: 'Rustic Loaf',
         image: '/images/rye.jpg',
         description:
-          '7 inch dark rye, chia and flex seed sourdough donut.',
+          '7 inch dark rye, chia and flex seed sourdough bread.',
         brand: 'mob',
         category: 'Sourdough',
         price: 12.00,

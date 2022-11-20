@@ -1,0 +1,22 @@
+{
+  "name": "mob",
+  "description": "Project to create online website for Mama Ong Bakes store. Check out [our instagram](https://www.instagram.com/mamaongbakes/) to join the mob!",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node backend/server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bryanongwenxi/mamaongbakes.git"
+  },
+  "author": "Bryan Ong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bryanongwenxi/mamaongbakes/issues"
+  },
+  "homepage": "https://github.com/bryanongwenxi/mamaongbakes#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
