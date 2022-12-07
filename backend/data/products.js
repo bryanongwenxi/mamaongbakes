@@ -1,6 +1,5 @@
 const products = [
     {
-      _id: '1',
       name: 'Kueh Salat',
       image: '/images/kuehsalat.jpg',
       description:
@@ -13,7 +12,6 @@ const products = [
       numReviews: 12,
     },
     {
-      _id: '2',
       name: 'Ubi Bingka',
       image: '/images/ubi.jpg',
       description:
@@ -26,7 +24,6 @@ const products = [
       numReviews: 8,
     },
     {
-      _id: '3',
       name: 'Almond Yuzu',
       image: '/images/almond.jpg',
       description:
@@ -39,7 +36,6 @@ const products = [
       numReviews: 15,
     },
     {
-      _id: '4',
       name: 'Blueberry Muffin',
       image: '/images/blueberry.jpg',
       description:
@@ -52,7 +48,6 @@ const products = [
       numReviews: 10,
     },
     {
-      _id: '5',
       name: 'Banana Cake',
       image: '/images/banana.jpg',
       description:
@@ -65,7 +60,6 @@ const products = [
       numReviews: 14,
     },
     {
-      _id: '6',
       name: 'Cinnamon Rolls',
       image: '/images/cinnamonroll.jpg',
       description:
@@ -78,7 +72,6 @@ const products = [
       numReviews: 8,
     },
     {
-        _id: '7',
         name: 'Bagel',
         image: '/images/bagel.jpg',
         description:
@@ -91,7 +84,6 @@ const products = [
         numReviews: 6,
       },
       {
-        _id: '8',
         name: 'Apple Ring',
         image: '/images/applering.jpg',
         description:
@@ -104,7 +96,6 @@ const products = [
         numReviews: 12,
       },
       {
-        _id: '9',
         name: 'Cranberry Walnut',
         image: '/images/cranberry.jpg',
         description:
@@ -117,7 +108,6 @@ const products = [
         numReviews: 10,
       },
       {
-        _id: '10',
         name: 'Cinnamon Sugar Donut',
         image: '/images/cinnamon.jpg',
         description:
@@ -130,7 +120,6 @@ const products = [
         numReviews: 12,
       },
       {
-        _id: '11',
         name: 'Custard Filled Donut',
         image: '/images/custard.jpg',
         description:
@@ -143,7 +132,6 @@ const products = [
         numReviews: 12,
       },
       {
-        _id: '12',
         name: 'Rustic Loaf',
         image: '/images/rye.jpg',
         description:
