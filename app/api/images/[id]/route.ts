@@ -1,0 +1,2 @@
+import { readImage } from '@/lib/store';
+export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){const {id}=await params;if(!/^[a-zA-Z0-9-]{1,80}$/.test(id))return new Response(null,{status:404});try{const image=await readImage(id);if(!image)return new Response(null,{status:404});return new Response(new Uint8Array(image.data),{headers:{'Content-Type':image.type,'Cache-Control':'public, max-age=31536000, immutable','X-Content-Type-Options':'nosniff'}});}catch{return new Response(null,{status:503});}}
