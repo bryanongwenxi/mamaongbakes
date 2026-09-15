@@ -6,3 +6,8 @@ node_modules/
 .local/
 *.tsbuildinfo
 .DS_Store
+.vercel
+
+# Provider-installed local agent helpers
+.agents/
+skills-lock.json
