@@ -1,18 +1,680 @@
-'use client';
-import { useEffect,useState } from 'react';
-import { Plus,ArrowUpRight,Check,LogOut,Save } from 'lucide-react';
-import { Brand,Modal } from '@/components/storefront';
-import { Product,money,priceOf,productSchema } from '@/lib/types';
-export default function Admin(){const [authenticated,setAuthenticated]=useState(false),[configured,setConfigured]=useState(true),[loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false),[products,setProducts]=useState<Product[]>([]),[revision,setRevision]=useState(1),[editing,setEditing]=useState<Product|null>(null),[notice,setNotice]=useState('');
- async function load(){const r=await fetch('/api/catalog',{cache:'no-store'});if(!r.ok)throw Error('Could not load the menu. Please refresh.');const data=await r.json();setProducts(data.products);setRevision(data.revision);}
- useEffect(()=>{(async()=>{try{const r=await fetch('/api/admin/session');if(!r.ok)throw Error('Could not check sign-in. Please refresh.');const s=await r.json();setAuthenticated(s.authenticated);setConfigured(s.configured);if(s.authenticated)await load();}catch(e){setError((e as Error).message);}finally{setLoading(false);}})();},[]);
- async function save(product:Product,remove=false){setBusy(true);try{const next=remove?products.filter(p=>p.id!==product.id):products.some(p=>p.id===product.id)?products.map(p=>p.id===product.id?product:p):[...products,product];const r=await fetch('/api/admin/products',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,products:next})});const d=await r.json();if(!r.ok)throw Error(d.error);setProducts(d.products);setRevision(d.revision);setEditing(null);setNotice(remove?`${product.name} was removed from the menu.`:`${product.name} saved. Your menu is up to date.`);}finally{setBusy(false);}}
- function newProduct(){setNotice('');setEditing({id:crypto.randomUUID(),name:'',category:'Kueh',description:'',ingredients:'',allergens:'',ingredientsVerified:false,image:'/icon.svg',available:true,featured:false,variants:[{id:crypto.randomUUID(),label:'',price:100,salePrice:null}]});}
- return <div className="admin-page"><header className="admin-header"><div className="wrap"><Brand/><div className="admin-nav"><a href="/" target="_blank" rel="noreferrer">View shop <ArrowUpRight size={13}/></a>{authenticated&&<button onClick={async()=>{try{const r=await fetch('/api/admin/session',{method:'DELETE'});if(!r.ok)throw Error();setAuthenticated(false);window.location.assign('/admin');}catch{setError('Could not sign out. Please try again.');}}}>Sign out <LogOut size={13}/></button>}</div></div></header>{loading?<main className="admin-login"><p>Opening the kitchen…</p></main>:!authenticated?<main className="admin-login"><h1>Sign in to the kitchen.</h1><p>Your session has ended. Continue with an approved Google account.</p><a className="button full" href="/api/auth/google">Continue with Google</a></main>:<main className="wrap admin-main"><div className="admin-top"><div><p className="eyebrow">MAMA’S KITCHEN</p><h1>Your menu, made simple.</h1><p>Prices, photos and little updates. Make yourself at home.</p></div><button className="button" onClick={newProduct}>Add a new bake <Plus size={17}/></button></div>{notice&&<p className="notice" role="status"><Check size={15}/> {notice}</p>}{error&&<p className="notice error" role="alert">{error}</p>}<div className="admin-grid">{products.map(p=><article className="admin-card" key={p.id}><img src={p.image} alt={p.name}/><div><span className="status">{p.available?'ON THE MENU':'TAKING A BREAK'}{p.variants.some(v=>v.salePrice!==null)?' · ON OFFER':''}</span><h3>{p.name}</h3><p>From {money(Math.min(...p.variants.map(priceOf)))}</p><button onClick={()=>{setEditing(structuredClone(p));setNotice('');}}>Edit bake <ArrowUpRight size={12}/></button></div></article>)}</div><div className="admin-help"><strong>A little help</strong><p>Use “Available to order” to pause a bake without removing it. For an offer, enter a lower offer price beside the usual price; customers will see the original crossed out. Only tick ingredient verification after checking the recipe and allergens.</p><p>Orders arrive directly in <a href="https://wa.me/6592301768" target="_blank" rel="noreferrer">WhatsApp</a>. Agree on the date, final amount and payment there.</p></div></main>}{editing&&<Editor original={editing} exists={products.some(p=>p.id===editing.id)} busy={busy} onClose={()=>{if(!busy)setEditing(null);}} onSave={save}/>}</div>;
+"use client";
+import { useEffect, useState } from "react";
+import {
+  Plus,
+  ArrowUpRight,
+  Check,
+  LogOut,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ImagePlus,
+} from "lucide-react";
+import { Brand, Modal } from "@/components/storefront";
+import {
+  Product,
+  money,
+  priceOf,
+  productSchema,
+  productImages,
+  MAX_PRODUCT_PHOTOS,
+} from "@/lib/types";
+export default function Admin() {
+  const [authenticated, setAuthenticated] = useState(false),
+    [configured, setConfigured] = useState(true),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false),
+    [products, setProducts] = useState<Product[]>([]),
+    [revision, setRevision] = useState(1),
+    [editing, setEditing] = useState<Product | null>(null),
+    [notice, setNotice] = useState("");
+  async function load() {
+    const r = await fetch("/api/catalog", { cache: "no-store" });
+    if (!r.ok) throw Error("Could not load the menu. Please refresh.");
+    const data = await r.json();
+    setProducts(data.products);
+    setRevision(data.revision);
+  }
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/admin/session");
+        if (!r.ok) throw Error("Could not check sign-in. Please refresh.");
+        const s = await r.json();
+        setAuthenticated(s.authenticated);
+        setConfigured(s.configured);
+        if (s.authenticated) await load();
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+  async function save(product: Product, remove = false) {
+    setBusy(true);
+    try {
+      const next = remove
+        ? products.filter((p) => p.id !== product.id)
+        : products.some((p) => p.id === product.id)
+          ? products.map((p) => (p.id === product.id ? product : p))
+          : [...products, product];
+      const r = await fetch("/api/admin/products", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revision, products: next }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw Error(d.error);
+      setProducts(d.products);
+      setRevision(d.revision);
+      setEditing(null);
+      setNotice(
+        remove
+          ? `${product.name} was removed from the menu.`
+          : `${product.name} saved. Your menu is up to date.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  function newProduct() {
+    setNotice("");
+    setEditing({
+      id: crypto.randomUUID(),
+      name: "",
+      category: "Kueh",
+      description: "",
+      ingredients: "",
+      allergens: "",
+      ingredientsVerified: false,
+      image: "/icon.svg",
+      images: [],
+      available: true,
+      featured: false,
+      variants: [
+        { id: crypto.randomUUID(), label: "", price: 100, salePrice: null },
+      ],
+    });
+  }
+  return (
+    <div className="admin-page">
+      <header className="admin-header">
+        <div className="wrap">
+          <Brand />
+          <div className="admin-nav">
+            <a href="/" target="_blank" rel="noreferrer">
+              View shop <ArrowUpRight size={13} />
+            </a>
+            {authenticated && (
+              <button
+                onClick={async () => {
+                  try {
+                    const r = await fetch("/api/admin/session", {
+                      method: "DELETE",
+                    });
+                    if (!r.ok) throw Error();
+                    setAuthenticated(false);
+                    window.location.assign("/admin");
+                  } catch {
+                    setError("Could not sign out. Please try again.");
+                  }
+                }}
+              >
+                Sign out <LogOut size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+      {loading ? (
+        <main className="admin-login">
+          <p>Opening the kitchen…</p>
+        </main>
+      ) : !authenticated ? (
+        <main className="admin-login">
+          <h1>Sign in to the kitchen.</h1>
+          <p>
+            Your session has ended. Continue with an approved Google account.
+          </p>
+          <a className="button full" href="/api/auth/google">
+            Continue with Google
+          </a>
+        </main>
+      ) : (
+        <main className="wrap admin-main">
+          <div className="admin-top">
+            <div>
+              <p className="eyebrow">MAMA’S KITCHEN</p>
+              <h1>Your menu, made simple.</h1>
+              <p>Prices, photos and little updates. Make yourself at home.</p>
+            </div>
+            <button className="button" onClick={newProduct}>
+              Add a new bake <Plus size={17} />
+            </button>
+          </div>
+          {notice && (
+            <p className="notice" role="status">
+              <Check size={15} /> {notice}
+            </p>
+          )}
+          {error && (
+            <p className="notice error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="admin-grid">
+            {products.map((p) => (
+              <article className="admin-card" key={p.id}>
+                <img src={p.image} alt={p.name} />
+                <div>
+                  <span className="status">
+                    {p.available ? "ON THE MENU" : "TAKING A BREAK"}
+                    {p.variants.some((v) => v.salePrice !== null)
+                      ? " · ON OFFER"
+                      : ""}
+                  </span>
+                  <h3>{p.name}</h3>
+                  <p>From {money(Math.min(...p.variants.map(priceOf)))}</p>
+                  <button
+                    onClick={() => {
+                      setEditing(structuredClone(p));
+                      setNotice("");
+                    }}
+                  >
+                    Edit bake <ArrowUpRight size={12} />
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="admin-help">
+            <strong>A little help</strong>
+            <p>
+              Use “Available to order” to pause a bake without removing it. For
+              an offer, enter a lower offer price beside the usual price;
+              customers will see the original crossed out. Only tick ingredient
+              verification after checking the recipe and allergens.
+            </p>
+            <p>
+              Orders arrive directly in{" "}
+              <a
+                href="https://wa.me/6592301768"
+                target="_blank"
+                rel="noreferrer"
+              >
+                WhatsApp
+              </a>
+              . Agree on the date, final amount and payment there.
+            </p>
+          </div>
+        </main>
+      )}
+      {editing && (
+        <Editor
+          original={editing}
+          exists={products.some((p) => p.id === editing.id)}
+          busy={busy}
+          onClose={() => {
+            if (!busy) setEditing(null);
+          }}
+          onSave={save}
+        />
+      )}
+    </div>
+  );
 }
-function Editor({original,exists,busy,onClose,onSave}:{original:Product;exists:boolean;busy:boolean;onClose:()=>void;onSave:(p:Product,remove?:boolean)=>Promise<void>}){const [p,setP]=useState(original),[error,setError]=useState(''),[uploading,setUploading]=useState(false),[confirmDelete,setConfirmDelete]=useState(false);
- function field<K extends keyof Product>(key:K,value:Product[K]){setP({...p,[key]:value});}
- async function submit(e:React.FormEvent){e.preventDefault();setError('');const parsed=productSchema.safeParse(p);if(!parsed.success){setError(parsed.error.issues[0].message);return;}if(p.image==='/icon.svg'){setError('Please add a photo of this bake.');return;}try{await onSave(parsed.data);}catch(e){setError((e as Error).message);}}
- async function upload(file?:File){if(!file)return;setUploading(true);setError('');try{const body=new FormData();body.set('photo',file);const r=await fetch('/api/admin/products',{method:'POST',body});const data=await r.json();if(!r.ok)throw Error(data.error);setP(prev=>({...prev,image:data.image}));}catch(e){setError((e as Error).message);}finally{setUploading(false);}}
- return <Modal title={exists?`Edit ${original.name}`:'Add a new bake'} onClose={onClose} wide><form className="admin-editor" onSubmit={submit}><p className="eyebrow">A LITTLE SOMETHING FOR THE MENU</p><h2>{exists?'Make it just right.':'What’s baking, Mama?'}</h2><div className="editor-photo"><img src={p.image} alt={p.name||'New bake preview'}/><div><label>{uploading?'Preparing your photo…':'Photo of your bake'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading||busy} onChange={e=>upload(e.target.files?.[0])}/></label><p>JPG, PNG or WebP, up to 4 MB. We’ll resize it for you.</p></div></div><div className="editor-row"><label className="field">Name<input required maxLength={100} value={p.name} onChange={e=>field('name',e.target.value)} placeholder="e.g. Pandan chiffon cake"/></label><label className="field">Category<select value={p.category} onChange={e=>field('category',e.target.value as Product['category'])}>{['Kueh','Bread & buns','Cakes & treats','Dumplings'].map(c=><option key={c}>{c}</option>)}</select></label></div><label className="field">A little description<textarea required rows={3} maxLength={1000} value={p.description} onChange={e=>field('description',e.target.value)} placeholder="Tell customers what makes it lovely."/></label><h3 className="editor-section-title">Sizes & prices</h3><p>Prices are in Singapore dollars. Leave the offer price empty for the usual price.</p>{p.variants.map((v,i)=><div className="variant-editor" key={v.id}><div className="editor-row"><label className="field">Size / portion<input required value={v.label} maxLength={100} onChange={e=>field('variants',p.variants.map((x,j)=>j===i?{...x,label:e.target.value}:x))} placeholder="e.g. Box of 4"/></label><label className="field">Usual price (S$)<input required type="number" min="1" max="1000" step="0.01" value={v.price/100||''} onChange={e=>field('variants',p.variants.map((x,j)=>j===i?{...x,price:Math.round(Number(e.target.value)*100)}:x))}/></label><label className="field">Offer price (S$)<input type="number" min="1" max={Math.max(1,(v.price-1)/100)} step="0.01" value={v.salePrice===null?'':v.salePrice/100} placeholder="Optional" onChange={e=>field('variants',p.variants.map((x,j)=>j===i?{...x,salePrice:e.target.value===''?null:Math.round(Number(e.target.value)*100)}:x))}/></label></div>{v.salePrice!==null&&<p>Customers see <del>{money(v.price)}</del> → {money(v.salePrice)}</p>}{p.variants.length>1&&<button type="button" onClick={()=>field('variants',p.variants.filter((_,j)=>j!==i))}>Remove this size</button>}</div>)}{p.variants.length<10&&<button type="button" className="text-button" onClick={()=>field('variants',[...p.variants,{id:crypto.randomUUID(),label:'',price:100,salePrice:null}])}><Plus size={15}/> Add another size</button>}<h3 className="editor-section-title">Ingredients & dietary notes</h3><label className="field">Ingredients<textarea maxLength={1500} rows={3} value={p.ingredients} onChange={e=>field('ingredients',e.target.value)}/></label><label className="field">Allergens / cross-contact notes<textarea maxLength={500} rows={2} value={p.allergens} onChange={e=>field('allergens',e.target.value)}/></label><label className="checkbox"><input type="checkbox" checked={p.ingredientsVerified} onChange={e=>field('ingredientsVerified',e.target.checked)}/><span>I have checked these ingredients and allergens against my recipe. <small>Until checked, customers see “not yet verified”.</small></span></label><label className="checkbox"><input type="checkbox" checked={p.available} onChange={e=>field('available',e.target.checked)}/>Available to order</label><label className="checkbox"><input type="checkbox" checked={p.featured} onChange={e=>field('featured',e.target.checked)}/>Show the “From Mama’s favourites” label</label>{error&&<p role="alert" className="notice error">{error}</p>}{confirmDelete&&<div className="notice"><strong>Remove {p.name} from the menu?</strong><p>Customers won’t be able to add this bake. You can pause it instead by unticking “Available to order”.</p><button type="button" className="delete-button" disabled={busy} onClick={async()=>{try{await onSave(p,true);}catch(e){setError((e as Error).message);}}}>Yes, remove this bake</button> <button type="button" className="secondary-button" onClick={()=>setConfirmDelete(false)}>Keep it</button></div>}<div className="editor-actions">{exists?<button type="button" className="delete-button" disabled={busy||uploading} onClick={()=>setConfirmDelete(true)}>Remove bake</button>:<button type="button" className="text-button" onClick={onClose}>Cancel</button>}<button className="button" disabled={busy||uploading}>{busy?'Saving…':'Save bake'} <Save size={16}/></button></div></form></Modal>;
+function Editor({
+  original,
+  exists,
+  busy,
+  onClose,
+  onSave,
+}: {
+  original: Product;
+  exists: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onSave: (p: Product, remove?: boolean) => Promise<void>;
+}) {
+  const [p, setP] = useState({
+      ...original,
+      images:
+        original.images ??
+        (original.image === "/icon.svg" ? [] : productImages(original)),
+    }),
+    [error, setError] = useState(""),
+    [uploading, setUploading] = useState(false),
+    [confirmDelete, setConfirmDelete] = useState(false);
+  function field<K extends keyof Product>(key: K, value: Product[K]) {
+    setP({ ...p, [key]: value });
+  }
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!p.images.length) {
+      setError("Please add at least one photo of this bake.");
+      return;
+    }
+    const parsed = productSchema.safeParse(p);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0].message);
+      return;
+    }
+    if (p.image === "/icon.svg") {
+      setError("Please add a photo of this bake.");
+      return;
+    }
+    try {
+      await onSave(parsed.data);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  function updatePhotos(images: string[]) {
+    setP((prev) => ({ ...prev, images, image: images[0] ?? "/icon.svg" }));
+  }
+  function movePhoto(index: number, step: number) {
+    const photos = [...p.images];
+    const destination = index + step;
+    if (destination < 0 || destination >= photos.length) return;
+    [photos[index], photos[destination]] = [photos[destination], photos[index]];
+    updatePhotos(photos);
+  }
+  async function upload(files: File[]) {
+    if (!files.length) return;
+    if (files.length + p.images.length > MAX_PRODUCT_PHOTOS) {
+      setError(`Choose up to ${MAX_PRODUCT_PHOTOS} photos in total.`);
+      return;
+    }
+    if (
+      files.some(
+        (file) =>
+          file.size > 4000000 ||
+          !["image/jpeg", "image/png", "image/webp"].includes(file.type),
+      )
+    ) {
+      setError("Choose JPG, PNG or WebP photos, each smaller than 4 MB.");
+      return;
+    }
+    setUploading(true);
+    setError("");
+    let completed = 0;
+    try {
+      for (const file of files) {
+        const body = new FormData();
+        body.set("photo", file);
+        const r = await fetch("/api/admin/products", { method: "POST", body });
+        const data = await r.json();
+        if (!r.ok) throw Error(data.error);
+        setP((prev) => {
+          const images = [...prev.images, data.image];
+          return { ...prev, images, image: images[0] };
+        });
+        completed++;
+      }
+    } catch (e) {
+      setError(
+        `${completed ? `${completed} photo(s) added. ` : ""}${(e as Error).message} You can retry the remaining photos.`,
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+  return (
+    <Modal
+      title={exists ? `Edit ${original.name}` : "Add a new bake"}
+      onClose={() => {
+        if (!uploading && !busy) onClose();
+      }}
+      wide
+    >
+      <form className="admin-editor" onSubmit={submit}>
+        <p className="eyebrow">A LITTLE SOMETHING FOR THE MENU</p>
+        <h2>{exists ? "Make it just right." : "What’s baking, Mama?"}</h2>
+        <section className="editor-photos" aria-label="Product photos">
+          <div className="editor-photos-heading">
+            <div>
+              <h3>Photos of your bake</h3>
+              <p>
+                The first photo is the cover. Add up to {MAX_PRODUCT_PHOTOS}.
+              </p>
+            </div>
+            <span>
+              {p.images.length} / {MAX_PRODUCT_PHOTOS}
+            </span>
+          </div>
+          <div className="editor-photo-grid">
+            {p.images.map((src, i) => (
+              <div className="editor-photo-item" key={src}>
+                <img src={src} alt={`Bake photo ${i + 1}`} />
+                <span className="editor-cover">
+                  {i === 0 ? "Cover" : `Photo ${i + 1}`}
+                </span>
+                <button
+                  type="button"
+                  className="photo-remove"
+                  disabled={busy || uploading}
+                  aria-label={`Remove photo ${i + 1}`}
+                  onClick={() =>
+                    updatePhotos(p.images.filter((_, j) => j !== i))
+                  }
+                >
+                  <X size={16} />
+                </button>
+                <div className="photo-order">
+                  <button
+                    type="button"
+                    disabled={i === 0 || busy || uploading}
+                    onClick={() => movePhoto(i, -1)}
+                    aria-label={`Move photo ${i + 1} earlier`}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={i === 0 || busy || uploading}
+                    onClick={() =>
+                      updatePhotos([src, ...p.images.filter((_, j) => j !== i)])
+                    }
+                  >
+                    {i === 0 ? "Cover photo" : "Make cover"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={i === p.images.length - 1 || busy || uploading}
+                    onClick={() => movePhoto(i, 1)}
+                    aria-label={`Move photo ${i + 1} later`}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {p.images.length < MAX_PRODUCT_PHOTOS && (
+            <label className="photo-upload">
+              <ImagePlus size={24} />
+              <span>
+                {uploading ? "Preparing your photos…" : "Add photos"}
+                <small>JPG, PNG or WebP · up to 4 MB each</small>
+              </span>
+              <input
+                aria-label="Add product photos"
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploading || busy}
+                onChange={(e) => {
+                  upload(Array.from(e.target.files ?? []));
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          )}
+          <p className="upload-status" role="status">
+            {uploading
+              ? "Uploading photos. Please keep this window open."
+              : "Photo changes go live when you save this bake."}
+          </p>
+        </section>
+        <div className="editor-row">
+          <label className="field">
+            Name
+            <input
+              required
+              maxLength={100}
+              value={p.name}
+              onChange={(e) => field("name", e.target.value)}
+              placeholder="e.g. Pandan chiffon cake"
+            />
+          </label>
+          <label className="field">
+            Category
+            <select
+              value={p.category}
+              onChange={(e) =>
+                field("category", e.target.value as Product["category"])
+              }
+            >
+              {["Kueh", "Bread & buns", "Cakes & treats", "Dumplings"].map(
+                (c) => (
+                  <option key={c}>{c}</option>
+                ),
+              )}
+            </select>
+          </label>
+        </div>
+        <label className="field">
+          A little description
+          <textarea
+            required
+            rows={3}
+            maxLength={1000}
+            value={p.description}
+            onChange={(e) => field("description", e.target.value)}
+            placeholder="Tell customers what makes it lovely."
+          />
+        </label>
+        <h3 className="editor-section-title">Sizes & prices</h3>
+        <p>
+          Prices are in Singapore dollars. Leave the offer price empty for the
+          usual price.
+        </p>
+        {p.variants.map((v, i) => (
+          <div className="variant-editor" key={v.id}>
+            <div className="editor-row">
+              <label className="field">
+                Size / portion
+                <input
+                  required
+                  value={v.label}
+                  maxLength={100}
+                  onChange={(e) =>
+                    field(
+                      "variants",
+                      p.variants.map((x, j) =>
+                        j === i ? { ...x, label: e.target.value } : x,
+                      ),
+                    )
+                  }
+                  placeholder="e.g. Box of 4"
+                />
+              </label>
+              <label className="field">
+                Usual price (S$)
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  max="1000"
+                  step="0.01"
+                  value={v.price / 100 || ""}
+                  onChange={(e) =>
+                    field(
+                      "variants",
+                      p.variants.map((x, j) =>
+                        j === i
+                          ? {
+                              ...x,
+                              price: Math.round(Number(e.target.value) * 100),
+                            }
+                          : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <label className="field">
+                Offer price (S$)
+                <input
+                  type="number"
+                  min="1"
+                  max={Math.max(1, (v.price - 1) / 100)}
+                  step="0.01"
+                  value={v.salePrice === null ? "" : v.salePrice / 100}
+                  placeholder="Optional"
+                  onChange={(e) =>
+                    field(
+                      "variants",
+                      p.variants.map((x, j) =>
+                        j === i
+                          ? {
+                              ...x,
+                              salePrice:
+                                e.target.value === ""
+                                  ? null
+                                  : Math.round(Number(e.target.value) * 100),
+                            }
+                          : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+            </div>
+            {v.salePrice !== null && (
+              <p>
+                Customers see <del>{money(v.price)}</del> → {money(v.salePrice)}
+              </p>
+            )}
+            {p.variants.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  field(
+                    "variants",
+                    p.variants.filter((_, j) => j !== i),
+                  )
+                }
+              >
+                Remove this size
+              </button>
+            )}
+          </div>
+        ))}
+        {p.variants.length < 10 && (
+          <button
+            type="button"
+            className="text-button"
+            onClick={() =>
+              field("variants", [
+                ...p.variants,
+                {
+                  id: crypto.randomUUID(),
+                  label: "",
+                  price: 100,
+                  salePrice: null,
+                },
+              ])
+            }
+          >
+            <Plus size={15} /> Add another size
+          </button>
+        )}
+        <h3 className="editor-section-title">Ingredients & dietary notes</h3>
+        <label className="field">
+          Ingredients
+          <textarea
+            maxLength={1500}
+            rows={3}
+            value={p.ingredients}
+            onChange={(e) => field("ingredients", e.target.value)}
+          />
+        </label>
+        <label className="field">
+          Allergens / cross-contact notes
+          <textarea
+            maxLength={500}
+            rows={2}
+            value={p.allergens}
+            onChange={(e) => field("allergens", e.target.value)}
+          />
+        </label>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={p.ingredientsVerified}
+            onChange={(e) => field("ingredientsVerified", e.target.checked)}
+          />
+          <span>
+            I have checked these ingredients and allergens against my recipe.{" "}
+            <small>Until checked, customers see “not yet verified”.</small>
+          </span>
+        </label>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={p.available}
+            onChange={(e) => field("available", e.target.checked)}
+          />
+          Available to order
+        </label>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={p.featured}
+            onChange={(e) => field("featured", e.target.checked)}
+          />
+          Show the “From Mama’s favourites” label
+        </label>
+        {error && (
+          <p role="alert" className="notice error">
+            {error}
+          </p>
+        )}
+        {confirmDelete && (
+          <div className="notice">
+            <strong>Remove {p.name} from the menu?</strong>
+            <p>
+              Customers won’t be able to add this bake. You can pause it instead
+              by unticking “Available to order”.
+            </p>
+            <button
+              type="button"
+              className="delete-button"
+              disabled={busy || uploading}
+              onClick={async () => {
+                try {
+                  await onSave(p, true);
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              Yes, remove this bake
+            </button>{" "}
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setConfirmDelete(false)}
+            >
+              Keep it
+            </button>
+          </div>
+        )}
+        <div className="editor-actions">
+          {exists ? (
+            <button
+              type="button"
+              className="delete-button"
+              disabled={busy || uploading}
+              onClick={() => setConfirmDelete(true)}
+            >
+              Remove bake
+            </button>
+          ) : (
+            <button type="button" className="text-button" onClick={onClose}>
+              Cancel
+            </button>
+          )}
+          <button className="button" disabled={busy || uploading}>
+            {busy ? "Saving…" : "Save bake"} <Save size={16} />
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
 }

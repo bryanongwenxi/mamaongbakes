@@ -5,7 +5,7 @@ A warm, responsive storefront and private menu editor for Mama Ong’s home bake
 ## Customer experience
 
 - All 14 offerings from the original Framer menu, with the original size/portion options and SGD prices.
-- Category filters, search, photos, ingredients and dietary notes.
+- Category filters, search, photo galleries, ingredients and dietary notes.
 - A basket saved on the customer’s device. Prices and availability are checked again before preparing an order enquiry.
 - Free Pasir Ris self-collection, or delivery with the fee explicitly pending.
 - A preferred date, name, delivery area and optional notes become a previewable WhatsApp message to **+65 9230 1768**. Opening WhatsApp does not send the message automatically.
@@ -14,6 +14,8 @@ A warm, responsive storefront and private menu editor for Mama Ong’s home bake
 ## Mama’s admin area
 
 Sign in at `/admin` using an approved Google account to add/edit/remove bakes, upload photos, manage size variants, pause availability and apply special prices. Sale prices appear alongside the crossed-out usual price. Edits are protected by an HTTP-only signed cookie, same-origin checks, an explicit Google email allowlist. Revision checks prevent concurrent edits from silently overwriting each other.
+
+Each bake supports up to eight JPG, PNG or WebP photos (4 MB each). Select multiple files, use the arrows to reorder them, or choose **Make cover**. The first photo appears in the menu and basket. Changes go live when you select **Save bake**. Existing single-photo entries work without a database migration.
 
 ### Production setup on Vercel
 
@@ -50,7 +52,7 @@ npm run typecheck
 npm run build
 ```
 
-The unit tests cover pricing, checkout messages, stale baskets, validation, and session integrity. `scripts/check-api.mjs` is a local-only integration check for authorization, CSRF, concurrent editing, photo uploads, offers, and adding/removing a bake. It expects a development server on port 3107 and local-only Google configuration plus an approved email and session secret in `.env.local`; it signs a local test session and restores the menu after running. Google token exchange must also be tested with the configured real OAuth client before launch. Never point it at production.
+The unit tests cover pricing, checkout messages, stale baskets, validation, and session integrity. `scripts/check-api.mjs` is a local-only integration check for authorization, CSRF, concurrent editing, photo uploads, gallery persistence, cover ordering, photo removal, offers, and adding/removing a bake. It expects a development server on port 3107 and local-only Google configuration plus an approved email and session secret in `.env.local`; it signs a local test session and restores the menu after running. Google token exchange must also be tested with the configured real OAuth client before launch. Never point it at production.
 
 ## Content to confirm
 
@@ -60,4 +62,4 @@ Prices and sizes were copied from https://mamaongbakes.framer.ai/ on 15 Septembe
 
 ## Visual identity
 
-The original M.O.B logo was sourced from the bakery’s Instagram profile. The family story is grounded in its bio: a passion project by a mum of three. The site uses exactly two font families: Abril Fatface for display headings and Manrope for navigation, products, body text and controls. Layout references: Ottolenghi (https://ottolenghi.co.uk/) and Gohar World (https://gohar.world/).
+The original M.O.B logo was sourced from the bakery’s Instagram profile. The family story is grounded in its bio: a passion project by a mum of three. The site uses one font family, Manrope, with bold oversized headings and clear body text. Notion (https://www.notion.com/product) inspired the typography and spacing; Airbnb (https://www.airbnb.com/) inspired rounded photo galleries and straightforward browsing controls. The original dusty rose palette remains, with large two-column desktop cards and full-width mobile cards.
